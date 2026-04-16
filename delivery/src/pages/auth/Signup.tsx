@@ -20,8 +20,8 @@ const Signup: React.FC = () => {
             fontWeight: '900', 
             margin: 0,
             letterSpacing: '-1.5px'
-          }}>Rappi</h1>
-          <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.4rem' }}>Únete a la comunidad</p>
+          }}>Rappi <span style={{ fontWeight: 400, fontSize: '1.2rem' }}>Delivery</span></h1>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.4rem' }}>Regístrate como repartidor</p>
         </div>
 
         <h2 style={{ 
@@ -29,7 +29,7 @@ const Signup: React.FC = () => {
           fontWeight: 700, 
           marginBottom: '1.5rem', 
           textAlign: 'center' 
-        }}>Crea tu cuenta</h2>
+        }}>Crea tu perfil de Repartidor</h2>
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>

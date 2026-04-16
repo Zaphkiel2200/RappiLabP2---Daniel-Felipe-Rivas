@@ -20,8 +20,8 @@ const Login: React.FC = () => {
             fontWeight: '900', 
             margin: 0,
             letterSpacing: '-1.5px'
-          }}>Rappi</h1>
-          <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.5rem' }}>¡De todo para todos!</p>
+          }}>Rappi <span style={{ fontWeight: 400, fontSize: '1.5rem' }}>Delivery</span></h1>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.5rem' }}>¡Genera ingresos con libertad!</p>
         </div>
 
         <h2 style={{ 
@@ -29,7 +29,7 @@ const Login: React.FC = () => {
           fontWeight: 700, 
           marginBottom: '1.5rem', 
           textAlign: 'center' 
-        }}>Bienvenido de nuevo</h2>
+        }}>Ingreso para Repartidores</h2>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1.5rem' }}>
