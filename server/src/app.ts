@@ -4,6 +4,7 @@ import cors from "cors";
 import { errorsMiddleware } from "./middlewares/errorsMiddleware";
 import { router as authRouter } from "./features/auth/auth.router";
 import { router as positionsRouter } from "./features/positions/position.router";
+import { router as ordersRouter } from "./features/orders/order.router";
 import { initDb } from "./config/database";
 
 const app = express();
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/positions", positionsRouter);
+app.use("/api/orders", ordersRouter);
 
 // Error handling middleware
 app.use(errorsMiddleware);

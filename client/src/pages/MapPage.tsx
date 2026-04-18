@@ -1,67 +1,54 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PositionProvider, usePosition } from '../providers/PositionProvider';
 import { useUser } from '../providers/UserProvider';
 import { MapView } from '../components/MapView';
 import { PositionMarkers } from '../components/PositionMarkers';
-import type { LatLng } from '../types';
-
-const getDistance = (p1: LatLng, p2: LatLng) => {
-  const R = 6371e3; // metres
-  const φ1 = (p1.lat * Math.PI) / 180;
-  const φ2 = (p2.lat * Math.PI) / 180;
-  const Δφ = ((p2.lat - p1.lat) * Math.PI) / 180;
-  const Δλ = ((p2.lng - p1.lng) * Math.PI) / 180;
-
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // in metres
-};
+import { OrderStatus } from '../types';
+import type { LatLng, Order } from '../types';
 
 const MapContent = () => {
   const { auth, logout } = useUser();
-  const { positions, myPosition, loading: positionLoading } = usePosition();
-  const [destination, setDestination] = useState<LatLng | null>(null);
-  const [proximityAlert, setProximityAlert] = useState(false);
+  const { 
+    positions, 
+    myPosition, 
+    activeOrder, 
+    loading: positionLoading,
+    createOrder,
+    acceptOrder,
+    refreshOrders
+  } = usePosition();
+
+  const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
+  const [selectedDestination, setSelectedDestination] = useState<LatLng | null>(null);
 
   const userName = auth?.user.userName ?? auth?.user.email ?? 'Usuario';
   const isDriver = auth?.user.role === 'driver';
 
+  useEffect(() => {
+    if (isDriver && !activeOrder) {
+      refreshOrders().then(orders => {
+        setAvailableOrders(orders.filter(o => o.status === OrderStatus.CREADO));
+      });
+    }
+  }, [isDriver, activeOrder, refreshOrders]);
+
   const handleMapClick = (pos: LatLng) => {
-    if (!isDriver) {
-      setDestination(pos);
+    if (!isDriver && !activeOrder) {
+      setSelectedDestination(pos);
     }
   };
 
-  // Check proximity between driver and destination
-  useEffect(() => {
-    if (destination) {
-      // Find the closest "other" user (assuming they are drivers if I'm client, or vice versa)
-      positions.forEach((pos) => {
-        const dist = getDistance({ lat: pos.latitude, lng: pos.longitude }, destination);
-        if (dist < 100) {
-          setProximityAlert(true);
-        } else {
-          setProximityAlert(false);
-        }
-      });
+  const handleConfirmOrder = async () => {
+    if (selectedDestination) {
+      await createOrder(selectedDestination);
+      setSelectedDestination(null);
     }
-  }, [positions, destination]);
+  };
 
   if (positionLoading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center flex-col gap-3"
-        style={{ background: 'var(--color-bg)' }}
-      >
-        <div
-          className="w-10 h-10 rounded-xl animate-pulse"
-          style={{
-            background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-deep))',
-          }}
-        />
+      <div className="min-h-screen flex items-center justify-center flex-col gap-3" style={{ background: 'var(--color-bg)' }}>
+        <div className="w-10 h-10 rounded-xl animate-pulse" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-deep))' }} />
         <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Cargando mapa...</p>
       </div>
     );
@@ -72,92 +59,97 @@ const MapContent = () => {
       {/* Header */}
       <div 
         className="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between px-6 py-3 rounded-2xl backdrop-blur-md"
-        style={{ 
-          background: 'rgba(255, 255, 255, 0.8)', 
-          border: '1px solid var(--color-border)',
-          boxShadow: '0 8px 32px var(--color-shadow-lg)'
-        }}
+        style={{ background: 'rgba(255, 255, 255, 0.8)', border: '1px solid var(--color-border)', boxShadow: '0 8px 32px var(--color-shadow-lg)' }}
       >
         <div className="flex items-center gap-3">
-          <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-deep))' }}
-          >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-deep))' }}>
             {userName.charAt(0).toUpperCase()}
           </div>
           <div>
             <p className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{userName}</p>
-            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--color-text-muted)' }}>
-              {isDriver ? 'Repartidor' : 'Cliente'}
-            </p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--color-text-muted)' }}>{isDriver ? 'Repartidor' : 'Cliente'}</p>
           </div>
         </div>
-
-        <button 
-          onClick={logout}
-          className="px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:bg-gray-100"
-          style={{ color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}
-        >
-          Cerrar Sesión
-        </button>
+        <button onClick={logout} className="px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:bg-gray-100" style={{ color: 'var(--color-danger)', border: '1px solid var(--color-border)' }}>Cerrar Sesión</button>
       </div>
 
       {/* Map */}
       <div className="absolute inset-0">
-        <MapView 
-          center={[myPosition.lat || 4.6097, myPosition.lng || -74.0817]} 
-          onMapClick={handleMapClick}
-        >
+        <MapView center={[myPosition.lat || 4.6097, myPosition.lng || -74.0817]} onMapClick={handleMapClick}>
           <PositionMarkers
             positions={positions}
             myPosition={myPosition}
             myUserId={auth?.user.id ?? ''}
             myUserName={userName}
-            destination={destination}
+            destination={activeOrder?.destination || selectedDestination}
           />
         </MapView>
       </div>
 
-      {/* Info Card */}
-      <div 
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-xs px-6 py-4 rounded-2xl backdrop-blur-md"
-        style={{ 
-          background: 'rgba(255, 255, 255, 0.9)', 
-          border: '1px solid var(--color-border)',
-          boxShadow: '0 8px 32px var(--color-shadow-lg)'
-        }}
-      >
-        {!destination && !isDriver && (
-          <p className="text-sm text-center font-medium" style={{ color: 'var(--color-text)' }}>
-            Haz clic en el mapa para establecer el destino
-          </p>
-        )}
-        
-        {(destination || isDriver) && (
-          <>
-            <p className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>
-              {proximityAlert ? '¡ATENCIÓN!' : 'ESTADO DEL PEDIDO'}
-            </p>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold" style={{ color: proximityAlert ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                {proximityAlert ? '¡El repartidor está llegando!' : positions.length > 0 ? 'Repartidor en camino' : 'Buscando repartidor...'}
-              </p>
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+      {/* Driver Controls: Available Orders */}
+      {isDriver && !activeOrder && availableOrders.length > 0 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm flex flex-col gap-3 px-4">
+          <p className="text-xs font-bold text-center drop-shadow-md text-white">PEDIDOS DISPONIBLES</p>
+          {availableOrders.map(order => (
+            <div key={order.id} className="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-gray-200 shadow-xl flex items-center justify-between animate-slide-up">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nuevo Pedido</p>
+                <p className="text-sm font-semibold text-gray-800">Distancia aprox: 1.2km</p>
               </div>
+              <button 
+                onClick={() => acceptOrder(order.id)}
+                className="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90 transition-all"
+                style={{ background: 'var(--color-primary)' }}
+              >
+                Aceptar
+              </button>
             </div>
-          </>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Client Controls: Confirm Order */}
+      {!isDriver && selectedDestination && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-xs flex flex-col gap-3 px-4 animate-slide-up">
+          <button 
+            onClick={handleConfirmOrder}
+            className="w-full py-4 rounded-2xl text-white font-bold shadow-2xl transition-all active:scale-95"
+            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-deep))' }}
+          >
+            Confirmar Punto de Entrega
+          </button>
+          <button onClick={() => setSelectedDestination(null)} className="w-full py-3 rounded-2xl bg-white/80 backdrop-blur-md text-gray-600 text-sm font-semibold border border-gray-200">Cancelar</button>
+        </div>
+      )}
+
+      {/* Active Order Status */}
+      {activeOrder && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-xs px-6 py-4 rounded-2xl backdrop-blur-md border border-gray-200 shadow-2xl" style={{ background: 'rgba(255, 255, 255, 0.95)' }}>
+          <p className="text-xs font-bold mb-1 text-gray-400 uppercase tracking-widest">
+            {activeOrder.status === OrderStatus.EN_ENTREGA ? 'EN CAMINO' : 'ORDEN CREADA'}
+          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-800">
+              {activeOrder.status === OrderStatus.EN_ENTREGA ? 'Repartidor en movimiento...' : 'Esperando repartidor...'}
+            </p>
+            <div className="flex gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse delay-75"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse delay-150"></div>
+            </div>
+          </div>
+          {isDriver && (
+            <p className="mt-3 text-[10px] text-gray-400 text-center font-medium italic">Usa las flechas del teclado para moverte</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 export const MapPage = () => {
   return (
-    <PositionProvider drawingMode={false}>
+    <PositionProvider>
       <MapContent />
     </PositionProvider>
   );

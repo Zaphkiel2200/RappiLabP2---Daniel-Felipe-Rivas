@@ -1,9 +1,17 @@
 // Definiciones de tipos globales para la aplicación Rappi
 
+export const OrderStatus = {
+  CREADO: "Creado",
+  EN_ENTREGA: "En entrega",
+  ENTREGADO: "Entregado",
+} as const;
+
+export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus];
+
 export interface User {
   id: string;
   email: string;
-  userName: string; // Adjusted from root providers usage
+  userName: string;
   full_name?: string;
   avatar_url?: string;
   role: 'client' | 'driver' | 'admin';
@@ -33,7 +41,6 @@ export interface Product {
   category: string;
 }
 
-// New types from root providers
 export interface LatLng {
   lat: number;
   lng: number;
@@ -57,8 +64,12 @@ export interface UserPosition {
   longitude: number;
 }
 
-export interface PolygonEnteredPayload {
-  userName: string;
-  polygonName: string;
-  ownerId: string;
+export interface Order {
+  id: string;
+  status: OrderStatusType;
+  delivery_position: LatLng | null;
+  destination: LatLng;
+  client_id: string;
+  delivery_id: string | null;
+  created_at: string;
 }
