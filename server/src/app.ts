@@ -1,21 +1,35 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import express from "express";
+import { NODE_ENV, PORT } from "./config";
+import cors from "cors";
+import { errorsMiddleware } from "./middlewares/errorsMiddleware";
+import { router as authRouter } from "./features/auth/auth.router";
+import { router as positionsRouter } from "./features/positions/position.router";
+import { initDb } from "./config/database";
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Rappi API is running!' });
+app.get("/", (req, res) => {
+  res.send("Rappi Maps API");
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+// Routes
+app.use("/api/auth", authRouter);
+app.use("/api/positions", positionsRouter);
+
+// Error handling middleware
+app.use(errorsMiddleware);
+
+const start = async () => {
+  await initDb();
+  if (NODE_ENV !== "production") {
+    app.listen(PORT, () => {
+      console.log("Server is running on http://localhost:" + PORT);
+    });
+  }
+};
+
+start();
 
 export default app;

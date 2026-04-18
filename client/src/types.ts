@@ -3,6 +3,7 @@
 export interface User {
   id: string;
   email: string;
+  userName: string; // Adjusted from root providers usage
   full_name?: string;
   avatar_url?: string;
   role: 'client' | 'driver' | 'admin';
@@ -30,4 +31,34 @@ export interface Product {
   price: number;
   image_url: string;
   category: string;
+}
+
+// New types from root providers
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+export interface AuthData {
+  user: User;
+  session: {
+    access_token: string;
+    refresh_token: string;
+    expires_at?: number;
+  };
+}
+
+export interface UserPosition {
+  user_id: string;
+  user: {
+    userName: string;
+  };
+  latitude: number;
+  longitude: number;
+}
+
+export interface PolygonEnteredPayload {
+  userName: string;
+  polygonName: string;
+  ownerId: string;
 }
