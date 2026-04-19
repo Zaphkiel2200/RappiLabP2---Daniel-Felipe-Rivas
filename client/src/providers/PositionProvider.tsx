@@ -58,17 +58,15 @@ export const PositionProvider: React.FC<{
       const { data } = await axios.get<UserPosition[]>("/api/positions");
       return data;
     } catch (err) {
-      showToast("Error al cargar posiciones", "error");
       return [];
     } finally {
       setLoading(false);
     }
   };
 
-  const refreshOrders = async () => {
+  const refreshOrders = useCallback(async () => {
     try {
       const { data } = await axios.get<Order[]>("/api/orders");
-      // Find active order for me
       const myOrder = data.find(o => 
         (o.client_id === auth?.user.id || o.delivery_id === auth?.user.id) && 
         o.status !== OrderStatus.ENTREGADO
@@ -78,7 +76,7 @@ export const PositionProvider: React.FC<{
     } catch (err) {
       return [];
     }
-  };
+  }, [axios, auth?.user.id]);
 
   const createOrder = async (destination: LatLng) => {
     try {
@@ -104,7 +102,6 @@ export const PositionProvider: React.FC<{
     async (pos: LatLng) => {
       try {
         if (activeOrder && activeOrder.delivery_id === auth?.user.id) {
-          // If I'm the driver of an active order, update order position
           const { data } = await axios.patch<Order>(`/api/orders/${activeOrder.id}/position`, {
             lat: pos.lat,
             lng: pos.lng,
@@ -116,14 +113,13 @@ export const PositionProvider: React.FC<{
             setActiveOrder(data);
           }
         } else {
-          // Otherwise update generic position
           await axios.patch("/api/positions", {
             latitude: pos.lat,
             longitude: pos.lng,
           });
         }
       } catch (err) {
-        // Silently fail for position updates to avoid spamming toasts
+        // Fail silently for position updates
       }
     },
     [axios, auth?.user.id, activeOrder, showToast],
@@ -196,7 +192,7 @@ export const PositionProvider: React.FC<{
         const latLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMyPosition(latLng);
         setGpsStatus("granted");
-        axios.post("/api/positions", { latitude: latLng.lat, longitude: latLng.lng });
+        axios.post("/api/positions", { latitude: latLng.lat, longitude: latLng.lng }).catch(() => {});
       },
       () => setGpsStatus("blocked")
     );
@@ -204,35 +200,51 @@ export const PositionProvider: React.FC<{
     const posData = await fetchPositions();
     setPositions(posData);
     await refreshOrders();
-  }, [axios]);
+  }, [axios, refreshOrders]);
 
   useEffect(() => {
     if (!auth) return;
-    
     onInit();
     const channel = supabase.channel("realtime-delivery");
     onListenRealtime(channel);
     channel.subscribe();
-
     return () => { channel.unsubscribe(); };
   }, [auth, onInit, onListenRealtime, supabase]);
 
-  if (!auth) return <>{children}</>;
+  const value = { 
+    positions, 
+    myPosition, 
+    activeOrder, 
+    loading, 
+    createOrder, 
+    acceptOrder, 
+    refreshOrders 
+  };
+
+  // If not auth, we still provide the context to avoid crashes, 
+  // though AppRoutes should prevent access.
+  if (!auth) {
+    return (
+      <PositionContext.Provider value={value}>
+        {children}
+      </PositionContext.Provider>
+    );
+  }
 
   if (gpsStatus === "pending") {
-    return <div className="fixed inset-0 flex items-center justify-center bg-white z-[9999]">Cargando GPS...</div>;
+    return (
+      <div 
+        className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]"
+        style={{ background: 'var(--color-bg)' }}
+      >
+        <div className="w-10 h-10 rounded-xl animate-pulse mb-4" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-deep))' }} />
+        <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>Cargando GPS...</p>
+      </div>
+    );
   }
 
   return (
-    <PositionContext.Provider value={{ 
-      positions, 
-      myPosition, 
-      activeOrder, 
-      loading, 
-      createOrder, 
-      acceptOrder, 
-      refreshOrders 
-    }}>
+    <PositionContext.Provider value={value}>
       {children}
     </PositionContext.Provider>
   );
