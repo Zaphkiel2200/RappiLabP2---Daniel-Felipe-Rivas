@@ -32,8 +32,8 @@ export const Icon: React.FC<IconProps> = ({ name, size = 24 }) => {
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="var(--color-primary)"
-      strokeWidth="2"
+      stroke="currentColor"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     >

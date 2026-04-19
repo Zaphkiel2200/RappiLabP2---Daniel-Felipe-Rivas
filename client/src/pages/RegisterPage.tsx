@@ -31,7 +31,7 @@ export const RegisterPage: React.FC = () => {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <form onSubmit={handleSubmit}>
         <AuthInput
           id="userName"
           label="Nombre de Usuario"

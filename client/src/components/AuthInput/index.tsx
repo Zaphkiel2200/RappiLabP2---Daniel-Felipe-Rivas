@@ -12,28 +12,24 @@ interface AuthInputProps {
 
 export const AuthInput: React.FC<AuthInputProps> = ({ id, label, type, placeholder, value, onChange, required }) => {
   return (
-    <div className="mb-4">
+    <div className="auth-input-group">
       <label
         htmlFor={id}
-        className="block text-xs font-medium mb-1.5 tracking-wide uppercase"
-        style={{ color: 'var(--color-text-muted)', letterSpacing: '0.06em' }}
+        className="auth-label"
       >
         {label}
       </label>
-      <input
-        id={id}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none"
-        style={{
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-bg-subtle)',
-          color: 'var(--color-text)',
-        }}
-        required={required}
-      />
+      <div className="auth-input-wrapper">
+        <input
+          id={id}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="auth-input"
+          required={required}
+        />
+      </div>
     </div>
   );
 };
