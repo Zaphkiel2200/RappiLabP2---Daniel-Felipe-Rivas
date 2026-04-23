@@ -207,11 +207,9 @@ export const PositionProvider: React.FC<{
             let lng = pos.longitude;
 
             const newPos: UserPosition = {
-              id: pos.id,
               user_id: pos.user_id,
               latitude: lat || 0,
               longitude: lng || 0,
-              updated_at: pos.updated_at,
               user: existing?.user || { userName: "Usuario" },
             };
 
