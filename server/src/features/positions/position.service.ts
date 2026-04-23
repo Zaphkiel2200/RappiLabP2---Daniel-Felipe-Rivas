@@ -1,5 +1,4 @@
 import { pool } from "../../config/database";
-import { supabase } from "../../config/supabase";
 import { UpdatePositionDTO, UserPosition } from "./position.types";
 
 export const getUserPositionService = async (
@@ -80,8 +79,6 @@ export const createPositionService = async (
     user: { userName: user.user_name, email: user.email },
   };
 
-  broadcastPositionUpdated(position);
-
   return position;
 };
 
@@ -109,8 +106,6 @@ export const updatePositionService = async (
 
   const position = result.rows[0];
 
-  broadcastPositionUpdated(position);
-
   return position;
 };
 
@@ -119,17 +114,7 @@ export const deletePositionService = async (userId: string): Promise<void> => {
     userId,
   ]);
 
-  broadcastPositionRemoved(userId);
+
 };
 
-const broadcastPositionUpdated = async (position: UserPosition) => {
-  const channel = supabase.channel("positions");
-  await channel.httpSend("position-updated", position);
-  supabase.removeChannel(channel);
-};
 
-const broadcastPositionRemoved = async (userId: string) => {
-  const channel = supabase.channel("positions");
-  await channel.httpSend("position-removed", { userId });
-  supabase.removeChannel(channel);
-};

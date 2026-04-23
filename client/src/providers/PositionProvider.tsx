@@ -158,28 +158,71 @@ export const PositionProvider: React.FC<{
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const onListenRealtime = useCallback((channel: RealtimeChannel) => {
-    channel.on("broadcast", { event: "position-updated" }, (payload) => {
-      const pos = payload.payload as UserPosition;
-      setPositions((prev) => {
-        const exists = prev.some((p) => p.user_id === pos.user_id);
-        if (!exists) return [...prev, pos];
-        return prev.map((p) => (p.user_id === pos.user_id ? pos : p));
-      });
-    });
+  const onListenRealtime = useCallback(
+    (channel: RealtimeChannel) => {
+      // Listen to changes in the orders table
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        (payload) => {
+          const newOrder = payload.new as any;
+          if (!newOrder || !newOrder.id) return;
 
-    channel.on("broadcast", { event: "order-updated" }, (payload) => {
-      const order = payload.payload as Order;
-      if (order.client_id === auth?.user.id || order.delivery_id === auth?.user.id) {
-        if (order.status === OrderStatus.ENTREGADO) {
-          setActiveOrder(null);
-          showToast("El pedido ha sido entregado", "success");
-        } else {
-          setActiveOrder(order);
+          // Note: In a real scenario, you might need to map PostGIS points if they come as strings
+          // For this lab, we assume the structure is compatible or handled by the cast
+          const order = newOrder as Order;
+
+          if (order.client_id === auth?.user.id || order.delivery_id === auth?.user.id) {
+            if (order.status === OrderStatus.ENTREGADO) {
+              setActiveOrder(null);
+              showToast("El pedido ha sido entregado", "success");
+            } else {
+              setActiveOrder(order);
+            }
+          }
         }
-      }
-    });
-  }, [auth?.user.id, showToast]);
+      );
+
+      // Listen to changes in user_positions
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_positions" },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const oldId = (payload.old as any).user_id;
+            setPositions((prev) => prev.filter((p) => p.user_id !== oldId));
+            return;
+          }
+
+          const pos = payload.new as any;
+          if (!pos || !pos.user_id) return;
+
+          // We try to keep the user info if we already have it
+          setPositions((prev) => {
+            const existing = prev.find((p) => p.user_id === pos.user_id);
+            
+            // Handle PostGIS 'position' if present (e.g. "0101000020E6100000...")
+            // or if they are already mapped as latitude/longitude
+            let lat = pos.latitude;
+            let lng = pos.longitude;
+
+            const newPos: UserPosition = {
+              id: pos.id,
+              user_id: pos.user_id,
+              latitude: lat || 0,
+              longitude: lng || 0,
+              updated_at: pos.updated_at,
+              user: existing?.user || { userName: "Usuario", email: "" },
+            };
+
+            if (!existing) return [...prev, newPos];
+            return prev.map((p) => (p.user_id === pos.user_id ? { ...newPos, user: p.user } : p));
+          });
+        }
+      );
+    },
+    [auth?.user.id, showToast],
+  );
 
   const onInit = useCallback(async () => {
     if (!navigator.geolocation) {

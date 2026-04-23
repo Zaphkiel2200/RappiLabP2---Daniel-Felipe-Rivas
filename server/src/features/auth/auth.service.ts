@@ -3,9 +3,22 @@ import Boom from '@hapi/boom';
 import { supabase } from '../../config/supabase';
 import { AuthResponse, AuthTokenResponsePassword } from '@supabase/supabase-js';
 
+const formatAuthResponse = (data: any) => {
+  if (!data.user) return data;
+  return {
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      userName: data.user.user_metadata?.userName || '',
+      role: data.user.user_metadata?.role || 'client',
+    },
+    session: data.session,
+  };
+};
+
 export const authenticateUserService = async (
   credentials: AuthenticateUserDTO
-): Promise<AuthTokenResponsePassword['data']> => {
+) => {
   const signInResponse = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
@@ -15,12 +28,12 @@ export const authenticateUserService = async (
     throw Boom.unauthorized(signInResponse.error.message);
   }
 
-  return signInResponse.data;
+  return formatAuthResponse(signInResponse.data);
 };
 
 export const createUserService = async (
   user: CreateUserDTO
-): Promise<AuthResponse['data']> => {
+) => {
   const signUpResponse = await supabase.auth.signUp({
     email: user.email,
     password: user.password,
@@ -35,7 +48,7 @@ export const createUserService = async (
     throw Boom.badRequest(signUpResponse.error.message);
   }
 
-  return signUpResponse.data;
+  return formatAuthResponse(signUpResponse.data);
 };
 
 export const refreshSessionService = async (refreshToken: string) => {
@@ -47,5 +60,5 @@ export const refreshSessionService = async (refreshToken: string) => {
     throw Boom.unauthorized(refreshResponse.error?.message ?? 'Invalid refresh token');
   }
 
-  return refreshResponse.data;
+  return formatAuthResponse(refreshResponse.data);
 };

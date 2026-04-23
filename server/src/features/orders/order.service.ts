@@ -28,7 +28,6 @@ export const createOrderService = async (
   const row = result.rows[0];
   const order = mapRowToOrder(row);
 
-  broadcastOrderUpdate(order);
   return order;
 };
 
@@ -60,7 +59,6 @@ export const acceptOrderService = async (
   }
 
   const order = mapRowToOrder(result.rows[0]);
-  broadcastOrderUpdate(order);
   return order;
 };
 
@@ -104,7 +102,6 @@ export const updateDeliveryPositionService = async (
   }
 
   const order = mapRowToOrder(result.rows[0]);
-  broadcastOrderUpdate(order);
   return order;
 };
 
@@ -137,8 +134,4 @@ const mapRowToOrder = (row: any): Order => ({
   created_at: row.created_at,
 });
 
-const broadcastOrderUpdate = async (order: Order) => {
-  const channel = supabase.channel("orders");
-  await channel.httpSend("order-updated", order);
-  supabase.removeChannel(channel);
-};
+
