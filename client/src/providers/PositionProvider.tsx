@@ -212,7 +212,7 @@ export const PositionProvider: React.FC<{
               latitude: lat || 0,
               longitude: lng || 0,
               updated_at: pos.updated_at,
-              user: existing?.user || { userName: "Usuario", email: "" },
+              user: existing?.user || { userName: "Usuario" },
             };
 
             if (!existing) return [...prev, newPos];

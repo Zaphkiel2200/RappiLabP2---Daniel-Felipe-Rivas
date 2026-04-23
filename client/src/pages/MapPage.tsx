@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PositionProvider, usePosition } from '../providers/PositionProvider';
 import { useUser } from '../providers/UserProvider';
 import { MapView } from '../components/MapView';
