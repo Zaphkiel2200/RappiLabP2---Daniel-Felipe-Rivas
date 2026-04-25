@@ -12,7 +12,6 @@ export const AxiosProvider: React.FC<{ children: React.ReactNode }> = ({
     const baseURL = import.meta.env.VITE_API_URL || "";
     const inst = axios.create({ baseURL });
 
-    // Interceptor para añadir el token a cada petición
     inst.interceptors.request.use((config) => {
       const auth = getStoredAuth();
       if (auth?.session?.access_token) {
@@ -21,14 +20,9 @@ export const AxiosProvider: React.FC<{ children: React.ReactNode }> = ({
       return config;
     });
 
-    // Interceptor para manejar errores globales (ej: 401 Unauthorized)
     inst.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Si el token no es válido, podríamos redirigir al login
-          // window.location.href = "/login";
-        }
         const message = error.response?.data?.message || "Ocurrió un error inesperado";
         return Promise.reject(new Error(message));
       }

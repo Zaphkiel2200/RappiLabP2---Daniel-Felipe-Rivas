@@ -119,7 +119,6 @@ export const PositionProvider: React.FC<{
           });
         }
       } catch (err) {
-        // Fail silently for position updates
       }
     },
     [axios, auth?.user.id, activeOrder, showToast],
@@ -160,7 +159,6 @@ export const PositionProvider: React.FC<{
 
   const onListenRealtime = useCallback(
     (channel: RealtimeChannel) => {
-      // Listen to changes in the orders table
       channel.on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
@@ -200,9 +198,6 @@ export const PositionProvider: React.FC<{
           // We try to keep the user info if we already have it
           setPositions((prev) => {
             const existing = prev.find((p) => p.user_id === pos.user_id);
-            
-            // Handle PostGIS 'position' if present (e.g. "0101000020E6100000...")
-            // or if they are already mapped as latitude/longitude
             let lat = pos.latitude;
             let lng = pos.longitude;
 

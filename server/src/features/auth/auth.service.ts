@@ -19,26 +19,44 @@ const formatAuthResponse = (data: any) => {
 export const authenticateUserService = async (
   credentials: AuthenticateUserDTO
 ) => {
-  console.log('DEBUG: Logging in user:', credentials.email);
   const signInResponse = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
   });
 
-  console.log('DEBUG: Supabase signIn response:', JSON.stringify(signInResponse, null, 2));
-
   if (signInResponse.error) {
-    console.error('DEBUG: Supabase signIn error:', signInResponse.error);
     throw Boom.unauthorized(signInResponse.error.message);
   }
 
-  return formatAuthResponse(signInResponse.data);
+  const { pool } = await import('../../config/database');
+  const result = await pool.query(
+    'SELECT id, email, user_name as "userName", role FROM public.users WHERE id = $1',
+    [signInResponse.data.user.id]
+  );
+
+  if (result.rows.length === 0) {
+    await pool.query(
+      'INSERT INTO public.users (id, email, user_name, role) VALUES ($1, $2, $3, $4)',
+      [
+        signInResponse.data.user.id, 
+        signInResponse.data.user.email, 
+        signInResponse.data.user.user_metadata?.userName || 'Usuario',
+        signInResponse.data.user.user_metadata?.role || 'client'
+      ]
+    );
+    return formatAuthResponse(signInResponse.data);
+  }
+
+  const dbUser = result.rows[0];
+  return {
+    user: dbUser,
+    session: signInResponse.data.session,
+  };
 };
 
 export const createUserService = async (
   user: CreateUserDTO
 ) => {
-  console.log('DEBUG: Registering user:', user.email);
   const signUpResponse = await supabase.auth.signUp({
     email: user.email,
     password: user.password,
@@ -49,11 +67,21 @@ export const createUserService = async (
     },
   });
 
-  console.log('DEBUG: Supabase signUp response:', JSON.stringify(signUpResponse, null, 2));
-
   if (signUpResponse.error) {
-    console.error('DEBUG: Supabase signUp error:', signUpResponse.error);
     throw Boom.badRequest(signUpResponse.error.message);
+  }
+
+  if (signUpResponse.data.user) {
+    const { pool } = await import('../../config/database');
+    await pool.query(
+      'INSERT INTO public.users (id, email, user_name, role) VALUES ($1, $2, $3, $4)',
+      [
+        signUpResponse.data.user.id, 
+        user.email, 
+        user.userName, 
+        'client' // Rol por defecto
+      ]
+    ).catch(err => console.error('Error al insertar en public.users:', err));
   }
 
   return formatAuthResponse(signUpResponse.data);
