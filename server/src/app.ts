@@ -20,17 +20,16 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json());
 
-// Middleware de inicialización diferida para evitar timeouts en Vercel
+// Middleware de inicialización diferida - NO BLOQUEANTE
 let dbInitialized = false;
-app.use(async (req, res, next) => {
-  if (!dbInitialized && req.path !== '/') {
-    try {
-      await initDb();
+app.use((req, res, next) => {
+  if (!dbInitialized) {
+    initDb().then(() => {
       dbInitialized = true;
       console.log('Database initialized successfully');
-    } catch (err) {
+    }).catch(err => {
       console.error('Lazy initialization error:', err);
-    }
+    });
   }
   next();
 });
