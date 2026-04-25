@@ -72,16 +72,22 @@ export const createUserService = async (
   }
 
   if (signUpResponse.data.user) {
-    const { pool } = await import('../../config/database');
-    await pool.query(
-      'INSERT INTO public.users (id, email, user_name, role) VALUES ($1, $2, $3, $4)',
-      [
-        signUpResponse.data.user.id, 
-        user.email, 
-        user.userName, 
-        'client' // Rol por defecto
-      ]
-    ).catch(err => console.error('Error al insertar en public.users:', err));
+    try {
+      const { pool } = await import('../../config/database');
+      await pool.query(
+        'INSERT INTO public.users (id, email, user_name, role) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING',
+        [
+          signUpResponse.data.user.id, 
+          user.email, 
+          user.userName, 
+          'client'
+        ]
+      );
+    } catch (dbErr) {
+      console.error('Error al sincronizar con public.users:', dbErr);
+      // No lanzamos error aquí para permitir que el usuario confirme su correo
+      // El perfil se creará automáticamente al primer login si falta
+    }
   }
 
   return formatAuthResponse(signUpResponse.data);

@@ -12,9 +12,13 @@ export const pool = DATABASE_URL
     });
 
 export const initDb = async () => {
-  await pool.query(`
-    CREATE EXTENSION IF NOT EXISTS postgis;
+  try {
+    await pool.query('CREATE EXTENSION IF NOT EXISTS postgis;');
+  } catch (e) {
+    console.warn('PostGIS extension already exists or could not be created automatically. Continuing...');
+  }
 
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS public.users (
       id UUID PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
