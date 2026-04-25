@@ -11,10 +11,10 @@ export const getUserPositionService = async (
       up.user_id,
       ST_Y(up.position::geometry) AS latitude,
       ST_X(up.position::geometry) AS longitude,
-      json_build_object('id', u.id, 'userName', u.raw_user_meta_data->>'userName', 'email', u.email) AS user,
+      json_build_object('id', u.id, 'userName', u.user_name, 'email', u.email) AS user,
       up.updated_at
     FROM public.user_positions up
-    JOIN auth.users u ON up.user_id = u.id
+    JOIN public.users u ON up.user_id = u.id
     WHERE up.user_id = $1
     `,
     [userId],
@@ -30,10 +30,10 @@ export const getPositionsService = async (): Promise<UserPosition[]> => {
       up.user_id,
       ST_Y(up.position::geometry) AS latitude,
       ST_X(up.position::geometry) AS longitude,
-      json_build_object('id', u.id, 'userName', u.raw_user_meta_data->>'userName', 'email', u.email) AS user,
+      json_build_object('id', u.id, 'userName', u.user_name, 'email', u.email) AS user,
       up.updated_at
     FROM public.user_positions up
-    JOIN auth.users u ON up.user_id = u.id
+    JOIN public.users u ON up.user_id = u.id
     ORDER BY up.updated_at DESC
   `);
 
@@ -44,18 +44,13 @@ export const createPositionService = async (
   userId: string,
   dto: UpdatePositionDTO,
 ): Promise<UserPosition> => {
-  // If position already exists, delete it first
-  const existing = await getUserPositionService(userId);
-  if (existing) {
-    await pool.query(`DELETE FROM public.user_positions WHERE user_id = $1`, [
-      userId,
-    ]);
-  }
-
   const result = await pool.query(
     `
     INSERT INTO public.user_positions (user_id, position)
     VALUES ($1, ST_MakePoint($2, $3)::geography)
+    ON CONFLICT (user_id) DO UPDATE SET 
+      position = ST_MakePoint($2, $3)::geography,
+      updated_at = now()
     RETURNING
       id,
       user_id,
@@ -69,52 +64,27 @@ export const createPositionService = async (
   const row = result.rows[0];
 
   const userResult = await pool.query(
-    `SELECT raw_user_meta_data->>'userName' AS user_name, email FROM auth.users WHERE id = $1`,
+    `SELECT user_name, email FROM public.users WHERE id = $1`,
     [userId],
   );
   const user = userResult.rows[0];
 
-  const position: UserPosition = {
+  return {
     ...row,
-    user: { userName: user.user_name, email: user.email },
+    user: { userName: user?.user_name || 'Usuario', email: user?.email || '' },
   };
-
-  return position;
 };
 
 export const updatePositionService = async (
   userId: string,
   dto: UpdatePositionDTO,
 ): Promise<UserPosition> => {
-  const result = await pool.query<UserPosition>(
-    `WITH updated AS (
-      UPDATE public.user_positions
-      SET position = ST_MakePoint($1, $2)::geography, updated_at = now()
-      WHERE user_id = $3
-      RETURNING id, user_id, ST_Y(position::geometry) AS latitude, ST_X(position::geometry) AS longitude, updated_at
-    )
-    SELECT u.id, u.user_id, u.latitude, u.longitude, u.updated_at,
-      json_build_object('id', usr.id, 'userName', usr.raw_user_meta_data->>'userName', 'email', usr.email) AS user
-    FROM updated u
-    JOIN auth.users usr ON usr.id = u.user_id`,
-    [dto.longitude, dto.latitude, userId],
-  );
-
-  if (result.rows.length === 0) {
-    return createPositionService(userId, dto);
-  }
-
-  const position = result.rows[0];
-
-  return position;
+  // Simplificamos usando la función que ya maneja el conflicto
+  return createPositionService(userId, dto);
 };
 
 export const deletePositionService = async (userId: string): Promise<void> => {
   await pool.query(`DELETE FROM public.user_positions WHERE user_id = $1`, [
     userId,
   ]);
-
-
 };
-
-

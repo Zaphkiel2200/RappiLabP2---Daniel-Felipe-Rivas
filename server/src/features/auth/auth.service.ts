@@ -19,20 +19,28 @@ const formatAuthResponse = (data: any) => {
 export const authenticateUserService = async (
   credentials: AuthenticateUserDTO
 ) => {
+  console.log('DEBUG: Login attempt for:', credentials.email);
+  
+  console.log('DEBUG: Calling Supabase...');
   const signInResponse = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
   });
 
   if (signInResponse.error) {
+    console.log('DEBUG: Supabase error:', signInResponse.error.message);
     throw Boom.unauthorized(signInResponse.error.message);
   }
 
+  console.log('DEBUG: Supabase OK. Connecting to Postgres...');
   const { pool } = await import('../../config/database');
+  
+  console.log('DEBUG: Running query on public.users...');
   const result = await pool.query(
     'SELECT id, email, user_name as "userName", role FROM public.users WHERE id = $1',
     [signInResponse.data.user.id]
   );
+  console.log('DEBUG: Postgres OK. Rows found:', result.rows.length);
 
   if (result.rows.length === 0) {
     await pool.query(
