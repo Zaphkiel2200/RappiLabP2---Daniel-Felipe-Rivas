@@ -14,3 +14,7 @@ export const DB_NAME = process.env.DB_NAME || 'mydatabase';
 export const DATABASE_URL = process.env.DATABASE_URL || '';
 export const SUPABASE_URL = process.env.SUPABASE_URL || '';
 export const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || '';
+
+if (!DATABASE_URL && NODE_ENV === 'production') {
+  console.warn('WARNING: DATABASE_URL is not set in production environment!');
+}

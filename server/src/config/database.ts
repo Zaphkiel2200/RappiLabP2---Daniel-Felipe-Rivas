@@ -49,8 +49,8 @@ export const initDb = async () => {
     CREATE TABLE IF NOT EXISTS public.orders (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       status TEXT NOT NULL DEFAULT 'Creado',
-      client_id UUID NOT NULL REFERENCES auth.users(id),
-      delivery_id UUID REFERENCES auth.users(id),
+      client_id UUID NOT NULL REFERENCES public.users(id),
+      delivery_id UUID REFERENCES public.users(id),
       destination GEOGRAPHY(POINT, 4326) NOT NULL,
       delivery_position GEOGRAPHY(POINT, 4326),
       created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())

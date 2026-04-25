@@ -58,6 +58,7 @@ export const PositionProvider: React.FC<{
       const { data } = await axios.get<UserPosition[]>("/api/positions");
       return data;
     } catch (err) {
+      showToast("Error al obtener posiciones de repartidores", "error");
       return [];
     } finally {
       setLoading(false);
@@ -74,9 +75,10 @@ export const PositionProvider: React.FC<{
       if (myOrder) setActiveOrder(myOrder);
       return data;
     } catch (err) {
+      showToast("Error al sincronizar pedidos", "error");
       return [];
     }
-  }, [axios, auth?.user.id]);
+  }, [axios, auth?.user.id, showToast]);
 
   const createOrder = async (destination: LatLng) => {
     try {
