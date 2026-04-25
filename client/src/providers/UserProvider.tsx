@@ -36,6 +36,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data } = await axios.post<AuthData>('/api/auth/login', { email, password });
       setAuth(data);
+      showToast('¡Bienvenido de nuevo!', 'success');
       navigate('/map');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al iniciar sesion', 'error');
@@ -49,6 +50,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data } = await axios.post<AuthData>('/api/auth/register', { email, password, userName });
       setAuth(data);
+      showToast('¡Cuenta creada con éxito!', 'success');
       navigate('/map');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al registrarse', 'error');

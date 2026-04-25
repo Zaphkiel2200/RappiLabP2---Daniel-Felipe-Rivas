@@ -59,22 +59,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-5 right-5 flex flex-col gap-2.5 z-[9999]">
+      <div className="toast-container">
         {toasts.map((toast) => {
           const style = toastStyles[toast.type];
           return (
             <div
               key={toast.id}
-              className="animate-slide-up flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-medium backdrop-blur-xl"
-              style={{
-                background: style.bg,
-                border: `1px solid ${style.border}`,
-                color: "var(--color-text, #fff)",
-                boxShadow: "0 8px 32px var(--color-shadow-lg, rgba(0,0,0,0.2))",
-              }}
+              className={`toast-item toast-${toast.type}`}
             >
               <span
-                className="text-base font-bold"
+                className="toast-icon"
                 style={{ color: toastTextColor[toast.type] }}
               >
                 {style.icon}
