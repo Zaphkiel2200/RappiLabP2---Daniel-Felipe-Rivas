@@ -9,6 +9,7 @@ import { initDb } from "./config/database";
 
 const app = express();
 
+// Configuración de CORS ultra-explícita para Vercel
 app.use(cors({
   origin: true,
   credentials: true,
@@ -17,18 +18,18 @@ app.use(cors({
 }));
 
 app.options('*', cors());
-
 app.use(express.json());
 
+// Middleware de inicialización diferida para evitar timeouts en Vercel
 let dbInitialized = false;
 app.use(async (req, res, next) => {
-  if (!dbInitialized) {
+  if (!dbInitialized && req.path !== '/') {
     try {
       await initDb();
       dbInitialized = true;
       console.log('Database initialized successfully');
     } catch (err) {
-      console.error('Error during lazy DB initialization:', err);
+      console.error('Lazy initialization error:', err);
     }
   }
   next();
@@ -43,16 +44,17 @@ app.get("/", (req, res) => {
   });
 });
 
+// Routes
 app.use("/api/auth", authRouter);
 app.use("/api/positions", positionsRouter);
 app.use("/api/orders", ordersRouter);
 
+// Error handling
 app.use(errorsMiddleware);
-
 
 if (NODE_ENV !== "production") {
   app.listen(PORT, () => {
-    console.log("Server is running on http://localhost:" + PORT);
+    console.log(`Server is running on http://localhost:${PORT}`);
   });
 }
 
