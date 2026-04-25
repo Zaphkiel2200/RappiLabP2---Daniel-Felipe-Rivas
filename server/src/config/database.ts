@@ -1,15 +1,15 @@
 import { Pool } from "pg";
 import { DATABASE_URL, DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER } from "./index";
 
-export const pool = DATABASE_URL 
-  ? new Pool({ connectionString: DATABASE_URL })
-  : new Pool({
-      host: DB_HOST,
-      port: DB_PORT,
-      database: DB_NAME,
-      user: DB_USER,
-      password: DB_PASSWORD,
-    });
+export const pool = new Pool({
+  connectionString: DATABASE_URL || `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
+  ssl: {
+    rejectUnauthorized: false
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
 export const initDb = async () => {
   try {
