@@ -95,13 +95,13 @@ body {
 .toast-item {
   pointer-events: auto;
   display: flex;
-  items-center: center;
+  align-items: center;
   gap: 12px;
   padding: 14px 24px;
   border-radius: 16px;
   font-size: 14px;
   font-weight: 600;
-  backdrop-blur: 16px;
+  backdrop-filter: blur(16px);
   box-shadow: 0 12px 32px var(--color-shadow-lg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;

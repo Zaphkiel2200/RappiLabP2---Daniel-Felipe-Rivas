@@ -19,12 +19,16 @@ const formatAuthResponse = (data: any) => {
 export const authenticateUserService = async (
   credentials: AuthenticateUserDTO
 ) => {
+  console.log('DEBUG: Logging in user:', credentials.email);
   const signInResponse = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
   });
 
+  console.log('DEBUG: Supabase signIn response:', JSON.stringify(signInResponse, null, 2));
+
   if (signInResponse.error) {
+    console.error('DEBUG: Supabase signIn error:', signInResponse.error);
     throw Boom.unauthorized(signInResponse.error.message);
   }
 
@@ -34,6 +38,7 @@ export const authenticateUserService = async (
 export const createUserService = async (
   user: CreateUserDTO
 ) => {
+  console.log('DEBUG: Registering user:', user.email);
   const signUpResponse = await supabase.auth.signUp({
     email: user.email,
     password: user.password,
@@ -44,7 +49,10 @@ export const createUserService = async (
     },
   });
 
+  console.log('DEBUG: Supabase signUp response:', JSON.stringify(signUpResponse, null, 2));
+
   if (signUpResponse.error) {
+    console.error('DEBUG: Supabase signUp error:', signUpResponse.error);
     throw Boom.badRequest(signUpResponse.error.message);
   }
 
