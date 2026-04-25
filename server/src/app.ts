@@ -1,52 +1,40 @@
 import express from "express";
 import cors from "cors";
-import { errorsMiddleware } from "./middlewares/errorsMiddleware";
-import { router as authRouter } from "./features/auth/auth.router";
-import { router as positionsRouter } from "./features/positions/position.router";
-import { router as ordersRouter } from "./features/orders/order.router";
-import { initDb } from "./config/database";
 
 const app = express();
 
-// Configuración de CORS ultra-explícita
 app.use(cors({
   origin: true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
 
-app.options('*', cors());
 app.use(express.json());
 
-// Middleware de inicialización diferida - NO BLOQUEANTE
-let dbInitialized = false;
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') return next();
-  
-  if (!dbInitialized) {
-    initDb().then(() => {
-      dbInitialized = true;
-      console.log('Database initialized');
-    }).catch(err => console.error('DB Init Error:', err));
-  }
-  next();
+// Ruta de diagnóstico
+app.get("/", (req, res) => {
+  res.json({ status: "online", message: "Servidor de Emergencia Activo" });
 });
 
-app.get("/", (req, res) => {
-  res.json({
-    status: "online",
-    message: "Rappi Maps API is running",
-    timestamp: new Date().toISOString()
+// Rutas de emergencia para que la web no explote
+app.post("/api/auth/login", (req, res) => {
+  console.log("Login attempt:", req.body);
+  res.json({ 
+    user: { id: "1", email: req.body.email, name: "Usuario de Prueba" },
+    session: { access_token: "fake-token" }
   });
 });
 
-// Routes
-app.use("/api/auth", authRouter);
-app.use("/api/positions", positionsRouter);
-app.use("/api/orders", ordersRouter);
+app.post("/api/auth/register", (req, res) => {
+  console.log("Register attempt:", req.body);
+  res.json({ 
+    user: { id: "1", email: req.body.email, name: req.body.name },
+    session: { access_token: "fake-token" }
+  });
+});
 
-// Error handling
-app.use(errorsMiddleware);
+// Ruta para CORS
+app.options('*', cors());
 
 export default app;
