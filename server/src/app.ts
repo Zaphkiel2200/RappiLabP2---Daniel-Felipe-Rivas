@@ -23,6 +23,11 @@ app.use(express.json());
 // Middleware de inicialización diferida - NO BLOQUEANTE
 let dbInitialized = false;
 app.use((req, res, next) => {
+  // No intentar conectar a la DB si es solo una petición de CORS (OPTIONS)
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   if (!dbInitialized) {
     initDb().then(() => {
       dbInitialized = true;
