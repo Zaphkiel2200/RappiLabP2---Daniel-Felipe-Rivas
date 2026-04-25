@@ -8,8 +8,31 @@ import { router as ordersRouter } from "./features/orders/order.router";
 import { initDb } from "./config/database";
 
 const app = express();
+
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+}));
+
+app.options('*', cors());
+
 app.use(express.json());
-app.use(cors());
+
+let dbInitialized = false;
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await initDb();
+      dbInitialized = true;
+      console.log('Database initialized successfully');
+    } catch (err) {
+      console.error('Error during lazy DB initialization:', err);
+    }
+  }
+  next();
+});
 
 app.get("/", (req, res) => {
   res.json({
@@ -20,29 +43,17 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes
 app.use("/api/auth", authRouter);
 app.use("/api/positions", positionsRouter);
 app.use("/api/orders", ordersRouter);
 
-// Error handling middleware
 app.use(errorsMiddleware);
 
-const start = async () => {
-  try {
-    await initDb();
-    console.log("Database initialized successfully");
-  } catch (error) {
-    console.error("Failed to initialize database:", error);
-  }
 
-  if (NODE_ENV !== "production") {
-    app.listen(PORT, () => {
-      console.log("Server is running on http://localhost:" + PORT);
-    });
-  }
-};
-
-start();
+if (NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log("Server is running on http://localhost:" + PORT);
+  });
+}
 
 export default app;
