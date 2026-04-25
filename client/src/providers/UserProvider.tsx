@@ -49,9 +49,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const { data } = await axios.post<AuthData>('/api/auth/register', { email, password, userName });
-      setAuth(data);
-      showToast('¡Cuenta creada con éxito!', 'success');
-      navigate('/map');
+      
+      if (data.session) {
+        setAuth(data);
+        showToast('¡Cuenta creada con éxito!', 'success');
+        navigate('/map');
+      } else {
+        // Case where email confirmation is required
+        showToast('¡Cuenta creada! Revisa tu correo para confirmar tu cuenta.', 'info');
+        navigate('/login');
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al registrarse', 'error');
     } finally {
