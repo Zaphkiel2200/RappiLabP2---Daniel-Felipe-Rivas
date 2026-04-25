@@ -1,5 +1,12 @@
 import express from "express";
 import cors from "cors";
+import { initDb } from "./config/database";
+
+// Importamos tus rutas reales
+import { router as authRouter } from "./features/auth/auth.router";
+import { router as positionsRouter } from "./features/positions/position.router";
+import { router as ordersRouter } from "./features/orders/order.router";
+import { errorsMiddleware } from "./middlewares/errorsMiddleware";
 
 const app = express();
 
@@ -12,29 +19,27 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ruta de diagnóstico
+// Diagnóstico
 app.get("/", (req, res) => {
-  res.json({ status: "online", message: "Servidor de Emergencia Activo" });
+  res.json({ status: "online", message: "Rappi Maps API Real Online" });
 });
 
-// Rutas de emergencia para que la web no explote
-app.post("/api/auth/login", (req, res) => {
-  console.log("Login attempt:", req.body);
-  res.json({ 
-    user: { id: "1", email: req.body.email, name: "Usuario de Prueba" },
-    session: { access_token: "fake-token" }
-  });
+// Inicialización de DB segura
+let dbInitialized = false;
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  if (!dbInitialized) {
+    initDb().then(() => { dbInitialized = true; });
+  }
+  next();
 });
 
-app.post("/api/auth/register", (req, res) => {
-  console.log("Register attempt:", req.body);
-  res.json({ 
-    user: { id: "1", email: req.body.email, name: req.body.name },
-    session: { access_token: "fake-token" }
-  });
-});
+// RUTAS REALES (Activadas)
+app.use("/api/auth", authRouter);
+app.use("/api/positions", positionsRouter);
+app.use("/api/orders", ordersRouter);
 
-// Ruta para CORS
 app.options('*', cors());
+app.use(errorsMiddleware);
 
 export default app;
